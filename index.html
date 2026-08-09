@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Кейсы · Инвентарь · Промокод · Профиль</title>
+    
+    <!-- ===== FIREBASE SDK ===== -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+        html,body{width:100%;height:100%;overflow:hidden;background:#0a0e17}
+        body{display:flex;justify-content:center;align-items:center;padding:8px}
+        .app-container{background:#0d1520;border-radius:32px;max-width:420px;width:100%;height:100%;max-height:750px;box-shadow:0 25px 50px rgba(0,0,0,.8);padding:16px 14px 14px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+        
+        body.fullscreen-mode{padding:0!important;background:#0a0e17;margin:0;height:100%;width:100%;overflow:hidden}
+        body.fullscreen-mode .app-container{border-radius:0!important;max-width:100%!important;max-height:100%!important;height:100vh!important;height:100dvh!important;width:100vw!important;padding:12px 12px 12px!important;box-shadow:none!important;border:none!important}
+        body.fullscreen-mode .fullscreen-toggle{background:rgba(0,180,255,.15);border-color:#00b4ff55;color:#00b4ff}
+        
+        .top-bar{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.04);margin-bottom:8px;flex-shrink:0}
+        .top-bar .stars-display{display:flex;align-items:center;gap:6px;background:rgba(255,215,0,.06);padding:3px 12px 3px 8px;border-radius:30px;border:1px solid rgba(255,215,0,.08)}
+        .top-bar .stars-display .star-icon{font-size:1.1rem;color:#fbbf24}
+        .top-bar .stars-display .star-count{color:#fbbf24;font-size:1rem;font-weight:700}
+        .top-bar .user-short{color:#4a5f74;font-size:.7rem;display:flex;align-items:center;gap:4px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .top-bar .user-short .online-dot{width:5px;height:5px;border-radius:50%;display:inline-block;flex-shrink:0}
+        .top-bar .user-short .online-dot.online{background:#4ade80}
+        .top-bar .user-short .online-dot.offline{background:#4a5f74}
+        
+        .fullscreen-toggle{position:absolute;top:8px;right:10px;z-index:10;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:30px;color:#6a7f94;padding:2px 10px;font-size:.6rem;cursor:pointer;backdrop-filter:blur(8px)}
+        
+        .tabs{display:flex;gap:2px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0;padding-right:50px}
+        .tab{flex:1;padding:6px 2px;text-align:center;border:none;background:transparent;color:#4a5f74;font-size:.65rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent}
+        .tab .tab-icon{font-size:.85rem}
+        .tab.active{color:#00b4ff;border-bottom-color:#00b4ff}
+        
+        .tab-content{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+        .tab-pane{display:none;flex:1;flex-direction:column;overflow-y:auto;padding-right:2px}
+        .tab-pane.active{display:flex}
+        .tab-pane::-webkit-scrollbar{width:3px}
+        .tab-pane::-webkit-scrollbar-thumb{background:#00b4ff33;border-radius:4px}
+        
+        .cases-list{display:flex;flex-direction:column;gap:6px;flex:1}
+        .case-item{display:flex;align-items:center;gap:10px;padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;flex-shrink:0}
+        .case-item .case-icon{font-size:22px;width:36px;flex-shrink:0}
+        .case-item .case-info{flex:1;min-width:0}
+        .case-item .case-info .name{color:#fff;font-weight:600;font-size:.9rem}
+        .case-item .case-info .desc{color:#4a5f74;font-size:.65rem;margin-top:1px}
+        .case-item .case-info .price{color:#fbbf24;font-size:.6rem;margin-top:1px}
+        .case-item .case-info .items-preview{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center}
+        .case-item .case-info .items-preview span{color:#6a7f94;font-size:.6rem;padding:1px 6px;background:rgba(255,255,255,.02);border-radius:4px;display:flex;align-items:center;gap:3px}
+        .case-item .case-info .items-preview .custom-icon{width:16px;height:16px;object-fit:contain}
+        .case-item .open-btn{background:transparent;border:1px solid #00b4ff44;color:#00b4ff;font-weight:600;padding:4px 12px;border-radius:20px;font-size:.65rem;cursor:pointer;flex-shrink:0}
+        
+        .open-result{padding:8px 12px;margin-top:6px;background:rgba(0,180,255,.03);border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;flex-shrink:0}
+        .open-result .label{color:#4a5f74;font-size:.7rem}
+        .open-result .value{color:#fff;font-weight:600;font-size:.9rem;display:flex;align-items:center;gap:6px}
+        
+        .promo-panel{flex:1;display:flex;flex-direction:column;justify-content:center;padding:16px 10px;gap:12px}
+        .promo-panel .promo-title{color:#f5d99b;font-size:1rem;font-weight:600;text-align:center}
+        .promo-panel .promo-desc{color:#6a7f94;font-size:.7rem;text-align:center}
+        .promo-panel .promo-input-group{display:flex;gap:8px}
+        .promo-panel .promo-input-group input{flex:1;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;color:#fff;font-size:.85rem;outline:none;text-align:center;text-transform:uppercase;letter-spacing:1px}
+        .promo-panel .promo-input-group input:focus{border-color:#00b4ff44}
+        .promo-panel .promo-input-group .promo-btn{padding:10px 18px;background:#00b4ff;border:none;border-radius:10px;color:#0a0e17;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap}
+        .promo-panel .promo-message{font-size:.8rem;min-height:1.2rem;text-align:center;color:#4a5f74}
+        .promo-panel .promo-message.success{color:#4ade80}
+        .promo-panel .promo-message.error{color:#f87171}
+        
+        .inventory-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.04);margin-bottom:6px;flex-shrink:0}
+        .inventory-header h3{color:#fff;font-size:.9rem;font-weight:600}
+        .inventory-header .count{color:#4a5f74;font-size:.7rem}
+        .inventory-list{display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto;padding-right:2px}
+        .inventory-list::-webkit-scrollbar{width:3px}
+        .inventory-list::-webkit-scrollbar-thumb{background:#00b4ff33;border-radius:4px}
+        
+        .inv-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.02);flex-shrink:0}
+        .inv-item .icon{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.02);border-radius:6px}
+        .inv-item .icon img{width:28px;height:28px;object-fit:contain;display:block}
+        .inv-item .info{flex:1;min-width:0}
+        .inv-item .info .name{color:#fff;font-weight:500;font-size:.8rem}
+        .inv-item .info .rarity{font-size:.6rem;color:#4a5f74}
+        .inv-item .info .sell-price{font-size:.55rem;color:#fbbf24}
+        .inv-item .count-badge{color:#00b4ff;font-size:.7rem;font-weight:600;margin-right:4px}
+        .inv-item .sell-btn{background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.08);color:#fbbf24;padding:3px 10px;border-radius:20px;font-size:.6rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+        
+        .empty-inventory{text-align:center;color:#3a4f64;padding:20px 0;font-size:.75rem}
+        .empty-inventory .big-icon{font-size:2rem;display:block;margin-bottom:6px;opacity:.4}
+        
+        .profile-card{padding:2px 0;flex:1;display:flex;flex-direction:column;overflow-y:auto}
+        .profile-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.03);flex-shrink:0}
+        .profile-row .avatar-big{font-size:32px;width:44px;text-align:center;flex-shrink:0;cursor:pointer}
+        .profile-row .info{flex:1;min-width:0}
+        .profile-row .info .name{color:#fff;font-size:1rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .profile-row .info .status{font-size:.65rem;margin-top:1px}
+        .profile-row .info .status.online{color:#00b4ff}
+        .profile-row .info .status.offline{color:#ff6b6b}
+        
+        .profile-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0;flex-shrink:0}
+        .profile-stats .stat{padding:8px;background:rgba(255,255,255,.02);border-radius:8px;text-align:center}
+        .profile-stats .stat .value{color:#fff;font-size:1rem;font-weight:700}
+        .profile-stats .stat .label{color:#4a5f74;font-size:.5rem;text-transform:uppercase;margin-top:1px}
+        .profile-stats .stat .value.stars-value{color:#fbbf24}
+        
+        .profile-actions{display:flex;gap:8px;margin-top:8px;flex-shrink:0}
+        .profile-actions button{flex:1;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;background:transparent}
+        .profile-actions .btn-logout{color:#ff6b6b;border:1px solid #ff6b6b33}
+        .profile-actions .btn-logout:disabled{opacity:.3;cursor:not-allowed}
+        .profile-actions .btn-register{color:#00b4ff;border:1px solid #00b4ff33}
+        
+        .admin-toggle-btn{background:rgba(255,200,0,.06);border:1px solid rgba(255,200,0,.08);color:#fbbf24;padding:4px 12px;border-radius:8px;font-size:.6rem;font-weight:600;cursor:pointer;margin-top:6px;flex-shrink:0;display:none;align-items:center;justify-content:center;gap:4px}
+        .admin-toggle-btn.visible{display:flex}
+        .admin-toggle-btn .badge{background:#fbbf2433;padding:0 6px;border-radius:20px;font-size:.5rem;color:#fbbf24}
+        
+        .admin-panel{background:rgba(255,200,0,.04);border:1px solid rgba(255,200,0,.08);border-radius:10px;padding:8px 10px;margin-top:6px;flex-shrink:0;display:none;max-height:250px;overflow-y:auto}
+        .admin-panel.visible{display:block}
+        .admin-panel .admin-title{color:#fbbf24;font-size:.6rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+        .admin-panel .admin-title .badge{background:#fbbf2433;color:#fbbf24;font-size:.5rem;padding:0 6px;border-radius:20px}
+        .admin-panel .admin-section-title{color:#6a7f94;font-size:.5rem;text-transform:uppercase;letter-spacing:.5px;margin:6px 0 3px}
+        .admin-panel .admin-row{display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+        .admin-panel .admin-row .admin-field{flex:1;min-width:60px;padding:4px 8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:6px;color:#fff;font-size:.7rem;outline:none}
+        .admin-panel .admin-row .admin-select{flex:1;min-width:60px;padding:4px 8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:6px;color:#fff;font-size:.7rem;cursor:pointer}
+        .admin-panel .admin-row .admin-select option{background:#0d1520;color:#fff}
+        .admin-panel .admin-btn{padding:4px 10px;background:#fbbf24;border:none;border-radius:6px;color:#0a0e17;font-weight:600;font-size:.65rem;cursor:pointer;white-space:nowrap}
+        .admin-panel .admin-btn-secondary{background:rgba(255,255,255,.06);color:#6a7f94}
+        .admin-panel .admin-btn-success{background:#4ade80;color:#0a0e17}
+        .admin-panel .account-list{margin-top:4px;max-height:100px;overflow-y:auto;background:rgba(255,255,255,.02);border-radius:6px;padding:3px}
+        .admin-panel .account-item{display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-bottom:1px solid rgba(255,255,255,.02);font-size:.6rem;color:#c8d6e5}
+        .admin-panel .account-item .acc-btn{background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.08);color:#fbbf24;padding:1px 8px;border-radius:20px;font-size:.5rem;font-weight:600;cursor:pointer}
+        .admin-panel .promo-list{margin-top:6px;max-height:80px;overflow-y:auto}
+        .admin-panel .promo-item{display:flex;justify-content:space-between;align-items:center;padding:3px 6px;background:rgba(255,255,255,.02);border-radius:4px;margin-bottom:3px;font-size:.65rem;color:#c8d6e5}
+        .admin-panel .promo-item .promo-code{color:#fbbf24;font-weight:600;font-family:monospace}
+        .admin-panel .admin-message{font-size:.6rem;color:#4a5f74;margin-top:3px;min-height:1rem}
+        .admin-panel .admin-message.success{color:#4ade80}
+        .admin-panel .admin-message.error{color:#f87171}
+        
+        .dialog-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);justify-content:center;align-items:center;z-index:2000;padding:20px}
+        .dialog-overlay.active{display:flex}
+        .custom-dialog{background:linear-gradient(160deg,#1a2a3a,#0d1520);border-radius:28px;padding:24px 20px 20px;max-width:340px;width:100%;border:1px solid rgba(255,215,0,.1);box-shadow:0 30px 60px rgba(0,0,0,.8);text-align:center}
+        .custom-dialog .dialog-icon{font-size:2.5rem;margin-bottom:6px;display:flex;align-items:center;justify-content:center}
+        .custom-dialog .dialog-icon img{width:40px;height:40px;object-fit:contain}
+        .custom-dialog .dialog-title{color:#f5d99b;font-size:1.1rem;font-weight:700;margin-bottom:4px}
+        .custom-dialog .dialog-text{color:#8aa4b8;font-size:.85rem;line-height:1.4;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+        .custom-dialog .dialog-text img{width:28px;height:28px;object-fit:contain}
+        .custom-dialog .dialog-sub{color:#4a5f74;font-size:.65rem;margin-bottom:12px}
+        .custom-dialog .dialog-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+        .custom-dialog .dialog-actions .dialog-btn{flex:1;min-width:70px;padding:8px 14px;border:none;border-radius:10px;font-weight:600;font-size:.75rem;cursor:pointer}
+        .custom-dialog .dialog-actions .dialog-btn-primary{background:#fbbf24;color:#0a0e17}
+        .custom-dialog .dialog-actions .dialog-btn-secondary{background:rgba(255,255,255,.06);color:#6a7f94}
+        .custom-dialog .dialog-actions .dialog-btn-success{background:#4ade80;color:#0a0e17}
+        .custom-dialog .dialog-actions .dialog-btn-gold{background:#fbbf24;color:#0a0e17}
+        
+        .auth-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);justify-content:center;align-items:center;z-index:1000;padding:20px}
+        .auth-modal.active{display:flex}
+        .auth-modal .modal-window{background:linear-gradient(160deg,#1a2a3a,#0d1520);border-radius:28px;padding:24px 20px 20px;max-width:360px;width:100%;border:1px solid rgba(0,180,255,.1);box-shadow:0 30px 60px rgba(0,0,0,.8)}
+        .auth-modal .modal-window h2{color:#f5d99b;font-size:1.3rem;text-align:center;margin-bottom:2px}
+        .auth-modal .modal-window .sub{color:#6a7f94;text-align:center;font-size:.75rem;margin-bottom:12px}
+        .auth-modal .modal-window .auth-tabs{display:flex;gap:3px;margin-bottom:12px;background:rgba(255,255,255,.03);border-radius:8px;padding:3px}
+        .auth-modal .modal-window .auth-tab{flex:1;padding:6px;text-align:center;border:none;background:transparent;color:#4a5f74;font-size:.7rem;font-weight:600;border-radius:6px;cursor:pointer}
+        .auth-modal .modal-window .auth-tab.active{background:rgba(0,180,255,.1);color:#00b4ff}
+        .auth-modal .modal-window .auth-form{display:none;flex-direction:column;gap:8px}
+        .auth-modal .modal-window .auth-form.active{display:flex}
+        .auth-modal .modal-window .auth-form label{color:#8aa4b8;font-size:.7rem;font-weight:500}
+        .auth-modal .modal-window .auth-form input{width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04);color:#f0e8d5;font-size:.85rem;outline:none}
+        .auth-modal .modal-window .auth-form input:focus{border-color:#00b4ff44}
+        .auth-modal .modal-window .auth-actions{display:flex;gap:8px;margin-top:4px}
+        .auth-modal .modal-window .auth-actions .btn{flex:1;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer}
+        .auth-modal .modal-window .auth-actions .btn-primary{background:#00b4ff;color:#0a0e17}
+        .auth-modal .modal-window .auth-actions .btn-secondary{background:rgba(255,255,255,.06);color:#6a7f94}
+        .auth-modal .modal-window .auth-error{color:#f87171;font-size:.7rem;min-height:1rem;text-align:center}
+        .auth-modal .modal-window .auth-success{color:#4ade80;font-size:.7rem;min-height:1rem;text-align:center}
+        .auth-modal .modal-window .auth-extra{text-align:center;margin-top:6px;font-size:.65rem;color:#4a5f74}
+        .auth-modal .modal-window .auth-extra button{background:none;border:none;color:#00b4ff;cursor:pointer;font-weight:600;font-size:.65rem;padding:0 4px}
+        
+        .btn-google{background:#fff;color:#333;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:.8rem;cursor:pointer;transition:.2s;margin-top:4px}
+        .btn-google:hover{background:#f5f5f5;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+        .btn-google:active{transform:scale(.97)}
+        .btn-google img{width:18px;height:18px}
+        .auth-divider{display:flex;align-items:center;gap:8px;margin:6px 0;color:#4a5f74;font-size:.65rem}
+        .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06)}
+        
+        @media (max-width:420px){.app-container{padding:12px 10px 12px}.tab{font-size:.6rem;padding:4px 2px}.inv-item .icon{width:30px;height:30px}.inv-item .icon img{width:24px;height:24px}.profile-stats .stat{padding:6px}.case-item{padding:8px 8px}.case-item .case-icon{font-size:18px;width:30px}}
+        
+        @media (orientation:landscape) and (max-height:600px){
+            body{padding:4px;align-items:stretch}
+            .app-container{max-width:100%;max-height:100%;border-radius:16px;padding:6px 10px 6px;flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:4px 10px}
+            .top-bar{flex:0 0 100%;padding-bottom:4px;margin-bottom:4px;flex-direction:row;flex-wrap:wrap;justify-content:space-between;gap:2px 6px}
+            .top-bar .stars-display{padding:2px 8px 2px 6px;font-size:.6rem}
+            .top-bar .stars-display .star-icon{font-size:.8rem}
+            .top-bar .stars-display .star-count{font-size:.75rem}
+            .top-bar .user-short{font-size:.55rem;gap:3px}
+            .fullscreen-toggle{top:3px;right:6px;padding:1px 6px;font-size:.45rem}
+            .tabs{flex:0 0 100%;padding-bottom:3px;margin-bottom:3px;padding-right:40px;gap:1px}
+            .tab{padding:3px 2px;font-size:.5rem;gap:1px}
+            .tab .tab-icon{font-size:.6rem}
+            .tab-content{flex:1;display:flex;flex-direction:row;gap:6px;min-height:0;overflow:hidden}
+            .tab-pane{flex:1;overflow-y:auto;min-width:0;padding-right:2px}
+            .tab-pane.active{display:flex}
+            .case-item{padding:4px 6px;gap:6px}
+            .case-item .case-icon{font-size:16px;width:24px}
+            .case-item .case-info .name{font-size:.7rem}
+            .case-item .case-info .desc{font-size:.5rem}
+            .case-item .case-info .price{font-size:.5rem}
+            .case-item .case-info .items-preview span{font-size:.45rem;padding:0 4px}
+            .case-item .case-info .items-preview .custom-icon{width:14px;height:14px}
+            .case-item .open-btn{font-size:.5rem;padding:2px 8px}
+            .open-result{padding:4px 8px;margin-top:4px;gap:3px}
+            .open-result .label{font-size:.55rem}
+            .open-result .value{font-size:.7rem;gap:4px}
+            .inventory-header{padding-bottom:3px;margin-bottom:3px}
+            .inventory-header h3{font-size:.7rem}
+            .inventory-header .count{font-size:.55rem}
+            .inv-item{padding:3px 4px;gap:6px}
+            .inv-item .icon{width:28px;height:28px;border-radius:4px}
+            .inv-item .icon img{width:20px;height:20px}
+            .inv-item .info .name{font-size:.65rem}
+            .inv-item .info .rarity{font-size:.45rem}
+            .inv-item .info .sell-price{font-size:.45rem}
+            .inv-item .count-badge{font-size:.6rem}
+            .inv-item .sell-btn{font-size:.5rem;padding:2px 6px}
+            .profile-row{padding:4px 0;gap:6px}
+            .profile-row .avatar-big{font-size:24px;width:34px}
+            .profile-row .info .name{font-size:.8rem}
+            .profile-row .info .status{font-size:.55rem}
+            .profile-stats{gap:3px;margin:4px 0}
+            .profile-stats .stat{padding:4px}
+            .profile-stats .stat .value{font-size:.8rem}
+            .profile-stats .stat .label{font-size:.4rem}
+            .profile-actions{margin-top:4px;gap:4px}
+            .profile-actions button{padding:4px 6px;font-size:.6rem}
+            .admin-toggle-btn{font-size:.5rem;padding:2px 8px;margin-top:3px}
+            .admin-panel{padding:4px 6px;max-height:150px}
+            .admin-panel .admin-field{padding:2px 6px;font-size:.55rem}
+            .admin-panel .admin-btn{padding:2px 8px;font-size:.55rem}
+            .admin-panel .admin-row{gap:3px;margin-bottom:2px}
+            .admin-panel .account-item{font-size:.5rem;padding:2px 4px}
+            .admin-panel .account-item .acc-btn{font-size:.45rem;padding:0 6px}
+            .admin-panel .promo-item{font-size:.55rem;padding:2px 4px}
+            .empty-inventory{padding:10px 0;font-size:.6rem}
+            .empty-inventory .big-icon{font-size:1.5rem}
+            .promo-panel{padding:6px 6px;gap:6px}
+            .promo-panel .promo-title{font-size:.75rem}
+            .promo-panel .promo-desc{font-size:.55rem}
+            .promo-panel .promo-input-group input{padding:4px 8px;font-size:.65rem}
+            .promo-panel .promo-input-group .promo-btn{padding:4px 10px;font-size:.6rem}
+            .promo-panel .promo-message{font-size:.65rem;min-height:1rem}
+            .custom-dialog{padding:16px 14px 14px;max-width:280px}
+            .custom-dialog .dialog-title{font-size:.95rem}
+            .custom-dialog .dialog-text{font-size:.75rem}
+            .custom-dialog .dialog-actions .dialog-btn{padding:4px 10px;font-size:.65rem}
+            .auth-modal .modal-window{padding:18px 16px 16px;max-width:320px}
+            .auth-modal .modal-window h2{font-size:1.1rem}
+            .auth-modal .modal-window .auth-tab{font-size:.6rem;padding:4px}
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <button class="fullscreen-toggle" id="fullscreenBtn">⛶ Full</button>
+
+    <div class="top-bar">
+        <div class="stars-display"><span class="star-icon">⭐</span><span class="star-count" id="starsDisplay">0</span></div>
+        <div class="user-short"><span id="userShortName">Гость</span><span class="online-dot offline" id="userShortDot"></span></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="cases"><span class="tab-icon">📦</span> Кейсы</button>
+        <button class="tab" data-tab="inventory"><span class="tab-icon">🎒</span> Инвентарь</button>
+        <button class="tab" data-tab="promo"><span class="tab-icon">🎟️</span> Промокод</button>
+        <button class="tab" data-tab="profile"><span class="tab-icon">👤</span> Профиль</button>
+    </div>
+
+    <div class="tab-content">
+        <!-- КЕЙСЫ -->
+        <div class="tab-pane active" id="pane-cases">
+            <div class="cases-list">
+                <div class="case-item">
+                    <div class="case-icon">📦</div>
+                    <div class="case-info">
+                        <div class="name">Стандартный кейс</div>
+                        <div class="desc">Базовый кейс</div>
+                        <div class="price">⭐ 1 Star</div>
+                        <div class="items-preview">
+                            <span><img src="https://i.postimg.cc/PJyP3HJb/lv-0-20260806151428.png" class="custom-icon"> Роза</span>
+                            <span><img src="https://i.postimg.cc/JzVjsrJx/lv-0-20260806155149.png" class="custom-icon"> Мишка</span>
+                        </div>
+                    </div>
+                    <button class="open-btn" data-case="standard" data-price="1">⭐ Открыть</button>
+                </div>
+                <div class="case-item" style="border-left:2px solid #fbbf24;background:rgba(255,215,0,.02)">
+                    <div class="case-icon">⭐</div>
+                    <div class="case-info">
+                        <div class="name" style="color:#fbbf24">Rare Case</div>
+                        <div class="desc">Редкий кейс</div>
+                        <div class="price" style="color:#fbbf24;">⭐ 4 Stars</div>
+                        <div class="items-preview">
+                            <span><img src="https://i.imgur.com/hKu9O8v.png" class="custom-icon"> B-Day Candle</span>
+                            <span><img src="https://i.imgur.com/CmJCB9b.png" class="custom-icon"> Pen</span>
+                            <span><img src="https://i.imgur.com/62cUHsg.png" class="custom-icon"> Mask</span>
+                        </div>
+                    </div>
+                    <button class="open-btn" data-case="rare" data-price="4" style="border-color:#fbbf24;color:#fbbf24;">⭐ Открыть</button>
+                </div>
+            </div>
+            <div class="open-result">
+                <span class="label">🎲 Последний выпад</span>
+                <span class="value" id="lastDrop"><span>—</span><span>нет</span></span>
+            </div>
+        </div>
+
+        <!-- ИНВЕНТАРЬ -->
+        <div class="tab-pane" id="pane-inventory">
+            <div class="inventory-header"><h3>🎒 Инвентарь</h3><span class="count" id="invCount">0 предметов</span></div>
+            <div class="inventory-list" id="inventoryList">
+                <div class="empty-inventory"><span class="big-icon">🎒</span>Инвентарь пуст<br><span style="font-size:.65rem;color:#2a3f54;">Откройте кейс, чтобы получить предметы</span></div>
+            </div>
+        </div>
+
+        <!-- ПРОМОКОД -->
+        <div class="tab-pane" id="pane-promo">
+            <div class="promo-panel">
+                <div class="promo-title">🎟️ Активация промокода</div>
+                <div class="promo-desc">Введите промокод, чтобы получить случайный предмет</div>
+                <div class="promo-input-group">
+                    <input type="text" id="promoInput" placeholder="Введите промокод..." maxlength="30">
+                    <button class="promo-btn" id="applyPromoBtn">Активировать</button>
+                </div>
+                <div class="promo-message" id="promoMessage"></div>
+            </div>
+        </div>
+
+        <!-- ПРОФИЛЬ -->
+        <div class="tab-pane" id="pane-profile">
+            <div class="profile-card">
+                <div class="profile-row">
+                    <div class="avatar-big" id="profileAvatar">👤</div>
+                    <div class="info">
+                        <div class="name" id="profileName">Гость</div>
+                        <div class="status offline" id="profileStatus">🔴 не авторизован</div>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat"><div class="value" id="statItems">0</div><div class="label">Предметов</div></div>
+                    <div class="stat"><div class="value stars-value" id="statStars">0</div><div class="label">⭐ Stars</div></div>
+                    <div class="stat"><div class="value" id="statCases">0</div><div class="label">Кейсов</div></div>
+                </div>
+                <div class="profile-actions">
+                    <button class="btn-register" id="openAuthBtn">🔐 Войти</button>
+                    <button class="btn-logout" id="profileLogoutBtn" disabled>🚪 Выйти</button>
+                </div>
+                <button class="admin-toggle-btn" id="adminToggleBtn">🛠️ CatCheat_Game.Owner <span class="badge">ADMIN</span></button>
+                <div class="admin-panel" id="adminPanel">
+                    <div class="admin-title">🛠️ Панель управления <span class="badge">CatCheat_Game.Owner</span></div>
+                    <div class="admin-section-title">📝 Создать промокод</div>
+                    <div class="admin-row">
+                        <input class="admin-field" id="promoNameInput" placeholder="Название">
+                        <input class="admin-field" id="promoUsesInput" placeholder="Активаций" type="number" min="1" value="1">
+                    </div>
+                    <div class="admin-row">
+                        <select class="admin-select" id="promoGiftSelect">
+                            <option value="Роза">🌹 Роза</option>
+                            <option value="Мишка">🧸 Мишка</option>
+                            <option value="B-Day Candle">🕯️ B-Day Candle</option>
+                            <option value="Pen">🖊️ Pen</option>
+                            <option value="Mask">🎭 Mask</option>
+                            <option value="Luna">🌙 Luna</option>
+                        </select>
+                        <button class="admin-btn" id="createPromoBtn">Создать</button>
+                    </div>
+                    <div class="admin-section-title">🎁 Выдать подарок</div>
+                    <div class="admin-row">
+                        <select class="admin-select" id="giftSelect">
+                            <option value="Роза">🌹 Роза</option>
+                            <option value="Мишка">🧸 Мишка</option>
+                            <option value="B-Day Candle">🕯️ B-Day Candle</option>
+                            <option value="Pen">🖊️ Pen</option>
+                            <option value="Mask">🎭 Mask</option>
+                            <option value="Luna">🌙 Luna</option>
+                        </select>
+                        <input class="admin-field" id="giftCountInput" placeholder="Кол-во" type="number" min="1" value="1">
+                    </div>
+                    <div class="admin-row">
+                        <input class="admin-field" id="giftTargetInput" placeholder="Кому (UID)" style="flex:2;">
+                        <button class="admin-btn admin-btn-success" id="giveGiftBtn">🎁 Выдать</button>
+                    </div>
+                    <div class="admin-section-title">👥 Все аккаунты</div>
+                    <div class="account-list" id="accountList"><div style="color:#4a5f74;font-size:.6rem;padding:3px 0;">Загрузка...</div></div>
+                    <div class="admin-section-title">🎟️ Активные промокоды</div>
+                    <div class="promo-list" id="promoList"><div style="color:#4a5f74;font-size:.6rem;padding:3px 0;">Загрузка...</div></div>
+                    <div class="admin-row" style="margin-top:4px;">
+                        <button class="admin-btn admin-btn-secondary" id="refreshAdminBtn">🔄 Обновить</button>
+                        <button class="admin-btn admin-btn-secondary" id="closeAdminBtn">✕ Закрыть</button>
+                    </div>
+                    <div class="admin-message" id="adminMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ДИАЛОГ -->
+<div class="dialog-overlay" id="dialogOverlay">
+    <div class="custom-dialog">
+        <div class="dialog-icon" id="dialogIcon">💰</div>
+        <div class="dialog-title" id="dialogTitle">Продажа</div>
+        <div class="dialog-text" id="dialogText">Выберите количество</div>
+        <div class="dialog-sub" id="dialogSub"></div>
+        <div class="dialog-actions" id="dialogActions">
+            <button class="dialog-btn dialog-btn-secondary" data-dialog="cancel">Отмена</button>
+            <button class="dialog-btn dialog-btn-gold" data-dialog="one">Продать 1</button>
+            <button class="dialog-btn dialog-btn-gold" data-dialog="all">Продать всё</button>
+        </div>
+    </div>
+</div>
+
+<!-- АВТОРИЗАЦИЯ -->
+<div class="auth-modal" id="authModal">
+    <div class="modal-window">
+        <h2>🔐 Аккаунт</h2>
+        <div class="sub">Войдите или создайте новый аккаунт</div>
+        
+        <div class="auth-tabs">
+            <button class="auth-tab active" data-auth-tab="login">Вход</button>
+            <button class="auth-tab" data-auth-tab="register">Регистрация</button>
+            <button class="auth-tab" data-auth-tab="recover">Восстановление</button>
+        </div>
+        
+        <!-- ВХОД -->
+        <div class="auth-form active" id="authFormLogin">
+            <label>📧 Email</label>
+            <input type="email" id="loginEmail" placeholder="Введите email">
+            <label>🔑 Пароль</label>
+            <input type="password" id="loginPassword" placeholder="Введите пароль">
+            <div class="auth-error" id="loginError"></div>
+            <button class="btn-google" id="googleLoginBtn">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Войти через Google
+            </button>
+            <div class="auth-divider">или</div>
+            <div class="auth-actions">
+                <button class="btn btn-secondary" id="authCancelBtn">Отмена</button>
+                <button class="btn btn-primary" id="authLoginBtn">Войти</button>
+            </div>
+        </div>
+        
+        <!-- РЕГИСТРАЦИЯ -->
+        <div class="auth-form" id="authFormRegister">
+            <label>👤 Имя в игре</label>
+            <input type="text" id="registerUsername" placeholder="Придумайте имя">
+            <label>📧 Email</label>
+            <input type="email" id="registerEmail" placeholder="Введите email">
+            <label>🔑 Пароль (минимум 6 символов)</label>
+            <input type="password" id="registerPassword" placeholder="Придумайте пароль">
+            <label>🔑 Повторите пароль</label>
+            <input type="password" id="registerPasswordConfirm" placeholder="Повторите пароль">
+            <div class="auth-error" id="registerError"></div>
+            <button class="btn-google" id="googleRegisterBtn">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Зарегистрироваться через Google
+            </button>
+            <div class="auth-divider">или</div>
+            <div class="auth-actions">
+                <button class="btn btn-secondary" id="authCancelBtn2">Отмена</button>
+                <button class="btn btn-primary" id="authRegisterBtn">Создать</button>
+            </div>
+        </div>
+        
+        <!-- ВОССТАНОВЛЕНИЕ -->
+        <div class="auth-form" id="authFormRecover">
+            <label>📧 Email</label>
+            <input type="email" id="recoverEmail" placeholder="Введите email для восстановления">
+            <div class="auth-error" id="recoverError"></div>
+            <div class="auth-success" id="recoverSuccess"></div>
+            <div class="auth-actions">
+                <button class="btn btn-secondary" id="authCancelBtn3">Отмена</button>
+                <button class="btn btn-primary" id="authRecoverBtn">Отправить письмо</button>
+            </div>
+        </div>
+        
+        <div class="auth-extra"><span id="authExtraText">Нет аккаунта? <button id="authSwitchToRegister">Зарегистрируйтесь</button></span></div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    //  FIREBASE КОНФИГУРАЦИЯ
+    // ============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyCeddvGGR-JFRAV8RiOi099lhf9TIlq8tU",
+        authDomain: "qwaq-game-case.firebaseapp.com",
+        projectId: "qwaq-game-case",
+        storageBucket: "qwaq-game-case.firebasestorage.app",
+        messagingSenderId: "606971019757",
+        appId: "1:606971019757:web:8bcad2bd93be88b33367e4",
+        measurementId: "G-YBCJYLF2RN"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // ============================================================
+    //  ДАННЫЕ ИГРЫ
+    // ============================================================
+    const STANDARD_ITEMS = ['Роза', 'Мишка'];
+    const RARE_ITEMS = ['B-Day Candle', 'Pen', 'Mask'];
+    const ALL_ITEMS = [...STANDARD_ITEMS, ...RARE_ITEMS, 'Luna'];
+
+    const IMG_URLS = {
+        'Роза': 'https://i.postimg.cc/PJyP3HJb/lv-0-20260806151428.png',
+        'Мишка': 'https://i.postimg.cc/JzVjsrJx/lv-0-20260806155149.png',
+        'B-Day Candle': 'https://i.imgur.com/hKu9O8v.png',
+        'Pen': 'https://i.imgur.com/CmJCB9b.png',
+        'Mask': 'https://i.imgur.com/62cUHsg.png',
+        'Luna': 'https://i.imgur.com/aua2Rj7.png'
+    };
+
+    function getImageHtml(item, size) {
+        size = size || 32;
+        const url = IMG_URLS[item];
+        if (!url) return '📦';
+        return `<img src="${url}" style="width:${size}px;height:${size}px;object-fit:contain;display:inline-block;vertical-align:middle;" referrerpolicy="no-referrer" crossorigin="anonymous">`;
+    }
+
+    const SELL_PRICES = {
+        'Роза': 5, 'Мишка': 6,
+        'B-Day Candle': 15, 'Pen': 20, 'Mask': 18,
+        'Luna': 976489378
+    };
+
+    const RARITY_MAP = {
+        'Роза': 'Обычный', 'Мишка': 'Обычный',
+        'B-Day Candle': 'Редкий', 'Pen': 'Редкий', 'Mask': 'Редкий',
+        'Luna': 'Легендарный'
+    };
+
+    const CASE_PRICES = { 'standard': 1, 'rare': 4 };
+
+    let currentUser = null;
+    let currentUid = null;
+    let inventory = [];
+    let lastDrop = null;
+    let stars = 0;
+    let promoCodes = [];
+
+    // ============================================================
+    //  DOM-ЭЛЕМЕНТЫ
+    // ============================================================
+    const tabs = document.querySelectorAll('.tab');
+    const panes = {
+        cases: document.getElementById('pane-cases'),
+        inventory: document.getElementById('pane-inventory'),
+        promo: document.getElementById('pane-promo'),
+        profile: document.getElementById('pane-profile')
+    };
+
+    const lastDropEl = document.getElementById('lastDrop');
+    const inventoryList = document.getElementById('inventoryList');
+    const invCount = document.getElementById('invCount');
+
+    const profileName = document.getElementById('profileName');
+    const profileAvatar = document.getElementById('profileAvatar');
+    const profileStatus = document.getElementById('profileStatus');
+    const statItems = document.getElementById('statItems');
+    const statStars = document.getElementById('statStars');
+    const statCases = document.getElementById('statCases');
+    const openAuthBtn = document.getElementById('openAuthBtn');
+    const profileLogoutBtn = document.getElementById('profileLogoutBtn');
+
+    const starsDisplay = document.getElementById('starsDisplay');
+    const userShortName = document.getElementById('userShortName');
+    const userShortDot = document.getElementById('userShortDot');
+
+    const promoInput = document.getElementById('promoInput');
+    const applyPromoBtn = document.getElementById('applyPromoBtn');
+    const promoMessage = document.getElementById('promoMessage');
+
+    const dialogOverlay = document.getElementById('dialogOverlay');
+    const dialogIcon = document.getElementById('dialogIcon');
+    const dialogTitle = document.getElementById('dialogTitle');
+    const dialogText = document.getElementById('dialogText');
+    const dialogSub = document.getElementById('dialogSub');
+    const dialogActions = document.getElementById('dialogActions');
+
+    const adminPanel = document.getElementById('adminPanel');
+    const adminToggleBtn = document.getElementById('adminToggleBtn');
+    const promoNameInput = document.getElementById('promoNameInput');
+    const promoUsesInput = document.getElementById('promoUsesInput');
+    const promoGiftSelect = document.getElementById('promoGiftSelect');
+    const createPromoBtn = document.getElementById('createPromoBtn');
+    const refreshAdminBtn = document.getElementById('refreshAdminBtn');
+    const closeAdminBtn = document.getElementById('closeAdminBtn');
+    const promoList = document.getElementById('promoList');
+    const accountList = document.getElementById('accountList');
+    const adminMessage = document.getElementById('adminMessage');
+
+    const giftSelect = document.getElementById('giftSelect');
+    const giftCountInput = document.getElementById('giftCountInput');
+    const giftTargetInput = document.getElementById('giftTargetInput');
+    const giveGiftBtn = document.getElementById('giveGiftBtn');
+
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const body = document.body;
+
+    const authModal = document.getElementById('authModal');
+    const authTabs = document.querySelectorAll('.auth-tab');
+    const authForms = {
+        login: document.getElementById('authFormLogin'),
+        register: document.getElementById('authFormRegister'),
+        recover: document.getElementById('authFormRecover')
+    };
+    
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginError = document.getElementById('loginError');
+    const authLoginBtn = document.getElementById('authLoginBtn');
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+
+    const registerUsername = document.getElementById('registerUsername');
+    const registerEmail = document.getElementById('registerEmail');
+    const registerPassword = document.getElementById('registerPassword');
+    const registerPasswordConfirm = document.getElementById('registerPasswordConfirm');
+    const registerError = document.getElementById('registerError');
+    const authRegisterBtn = document.getElementById('authRegisterBtn');
+    const googleRegisterBtn = document.getElementById('googleRegisterBtn');
+
+    const recoverEmail = document.getElementById('recoverEmail');
+    const recoverError = document.getElementById('recoverError');
+    const recoverSuccess = document.getElementById('recoverSuccess');
+    const authRecoverBtn = document.getElementById('authRecoverBtn');
+
+    const authCancelBtns = [
+        document.getElementById('authCancelBtn'),
+        document.getElementById('authCancelBtn2'),
+        document.getElementById('authCancelBtn3')
+    ];
+    const authExtraText = document.getElementById('authExtraText');
+
+    // ============================================================
+    //  ОСНОВНЫЕ ФУНКЦИИ
+    // ============================================================
+
+    async function enterGame(user) {
+        currentUid = user.uid;
+        try {
+            const doc = await db.collection('accounts').doc(user.uid).get();
+            if (doc.exists) {
+                const data = doc.data();
+                currentUser = data.username || user.email;
+                inventory = data.inventory || [];
+                lastDrop = data.lastDrop || null;
+                stars = data.stars || 0;
+            } else {
+                const name = prompt('Введите имя для игры:');
+                const newUser = name || user.displayName || user.email || 'Игрок';
+                await db.collection('accounts').doc(user.uid).set({
+                    username: newUser,
+                    email: user.email,
+                    inventory: [],
+                    lastDrop: null,
+                    stars: 1,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                const dropped = STANDARD_ITEMS[Math.floor(Math.random() * STANDARD_ITEMS.length)];
+                await db.collection('accounts').doc(user.uid).update({
+                    inventory: [dropped],
+                    lastDrop: dropped
+                });
+                currentUser = newUser;
+                inventory = [dropped];
+                lastDrop = dropped;
+                stars = 1;
+            }
+        } catch (e) {
+            console.error('Ошибка загрузки данных:', e);
+        }
+        updateAuthUI();
+        closeAuthModal();
+        const display = lastDrop ? getImageHtml(lastDrop, 32) : '🎁';
+        showDialog('👋', 'Добро пожаловать!', `${display} <span style="color:#4ade80;">${currentUser}</span>`, 'Вы вошли в игру!', [
+            { id: 'ok', label: 'Отлично!', type: 'success', cb: () => {} }
+        ]);
+    }
+
+    async function logoutUser() {
+        try {
+            await auth.signOut();
+            currentUser = null;
+            currentUid = null;
+            inventory = [];
+            lastDrop = null;
+            stars = 0;
+            updateAuthUI();
+        } catch (e) {
+            console.error('Ошибка выхода:', e);
+        }
+    }
+
+    // ============================================================
+    //  РЕГИСТРАЦИЯ И ВХОД
+    // ============================================================
+
+    async function registerWithEmail(email, password, username) {
+        try {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user;
+            await db.collection('accounts').doc(user.uid).set({
+                username: username,
+                email: email,
+                inventory: [],
+                lastDrop: null,
+                stars: 1,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            const dropped = STANDARD_ITEMS[Math.floor(Math.random() * STANDARD_ITEMS.length)];
+            await db.collection('accounts').doc(user.uid).update({
+                inventory: [dropped],
+                lastDrop: dropped
+            });
+            await enterGame(user);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    async function loginWithEmail(email, password) {
+        try {
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            await enterGame(userCredential.user);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    async function loginWithGoogle() {
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await auth.signInWithPopup(provider);
+            await enterGame(result.user);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    async function resetPassword(email) {
+        try {
+            await auth.sendPasswordResetEmail(email);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    // ============================================================
+    //  ОБНОВЛЕНИЕ UI
+    // ============================================================
+
+    function updateAuthUI() {
+        if (currentUser) {
+            profileName.textContent = currentUser;
+            profileStatus.textContent = '🟢 активен';
+            profileStatus.className = 'status online';
+            openAuthBtn.textContent = '🔄 Сменить аккаунт';
+            profileLogoutBtn.disabled = false;
+            userShortName.textContent = currentUser;
+            userShortDot.className = 'online-dot online';
+        } else {
+            profileName.textContent = 'Гость';
+            profileStatus.textContent = '🔴 не авторизован';
+            profileStatus.className = 'status offline';
+            openAuthBtn.textContent = '🔐 Войти';
+            profileLogoutBtn.disabled = true;
+            userShortName.textContent = 'Гость';
+            userShortDot.className = 'online-dot offline';
+        }
+        renderInventory();
+        updateTopBar();
+        checkAdminAccess();
+    }
+
+    function updateTopBar() { starsDisplay.textContent = stars; }
+
+    function checkAdminAccess() {
+        if (currentUser === 'CatCheat_Game.Owner') {
+            adminToggleBtn.classList.add('visible');
+        } else {
+            adminToggleBtn.classList.remove('visible');
+            adminPanel.classList.remove('visible');
+        }
+    }
+
+    function renderInventory() {
+        if (!inventoryList) return;
+        if (!currentUser || inventory.length === 0) {
+            inventoryList.innerHTML = `
+                <div class="empty-inventory">
+                    <span class="big-icon">🎒</span>
+                    ${!currentUser ? 'Авторизуйтесь, чтобы собирать предметы' : 'Инвентарь пуст'}<br>
+                    <span style="font-size:.65rem;color:#2a3f54;">Откройте кейс, чтобы получить предметы</span>
+                </div>
+            `;
+            return;
+        }
+
+        const grouped = {};
+        inventory.forEach(item => { grouped[item] = (grouped[item] || 0) + 1; });
+
+        let html = '';
+        for (const [name, count] of Object.entries(grouped)) {
+            const rarity = RARITY_MAP[name] || 'Обычный';
+            const price = SELL_PRICES[name] || 0;
+            const isRare = rarity === 'Редкий' || rarity === 'Легендарный';
+            const imgHtml = getImageHtml(name, 28);
+            const isLegendary = rarity === 'Легендарный';
+            const borderColor = isLegendary ? '#ff6b6b' : (isRare ? '#fbbf24' : '');
+            const nameColor = isLegendary ? '#ff6b6b' : (isRare ? '#fbbf24' : '');
+
+            html += `
+                <div class="inv-item" style="${borderColor ? 'border-left:2px solid ' + borderColor + ';' : ''}">
+                    <div class="icon">${imgHtml}</div>
+                    <div class="info">
+                        <div class="name" style="${nameColor ? 'color:' + nameColor + ';' : ''}">${name}</div>
+                        <div class="rarity" style="${nameColor ? 'color:' + nameColor + ';' : ''}">${rarity}</div>
+                        <div class="sell-price">⭐ ${price} Stars</div>
+                    </div>
+                    <span class="count-badge">×${count}</span>
+                    <button class="sell-btn" data-item="${name}">Продать</button>
+                </div>
+            `;
+        }
+        inventoryList.innerHTML = html;
+
+        document.querySelectorAll('.sell-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const itemName = this.dataset.item;
+                openSellDialog(itemName);
+            });
+        });
+
+        if (invCount) invCount.textContent = `${inventory.length} предметов`;
+        if (statItems) statItems.textContent = inventory.length;
+        if (statStars) statStars.textContent = stars;
+        if (statCases) statCases.textContent = currentUser ? '2' : '0';
+    }
+
+    function updateLastDrop() {
+        if (lastDrop) {
+            const imgHtml = getImageHtml(lastDrop, 24);
+            const rarity = RARITY_MAP[lastDrop] || 'Обычный';
+            const isRare = rarity === 'Редкий' || rarity === 'Легендарный';
+            const color = rarity === 'Легендарный' ? '#ff6b6b' : (isRare ? '#fbbf24' : '');
+            lastDropEl.innerHTML =
+                `${imgHtml} <span style="${color ? 'color:' + color + ';' : ''}">${lastDrop}</span> <span style="font-size:.6rem;color:${color || '#4a5f74'};margin-left:3px;">(${rarity})</span>`;
+        } else {
+            lastDropEl.innerHTML = `<span>—</span><span>нет</span>`;
+        }
+    }
+
+    async function refreshUI() {
+        updateLastDrop();
+        renderInventory();
+        updateTopBar();
+        if (currentUser && currentUid) {
+            try {
+                await db.collection('accounts').doc(currentUid).update({
+                    inventory: inventory,
+                    lastDrop: lastDrop,
+                    stars: stars
+                });
+            } catch (e) {
+                console.error('Ошибка сохранения:', e);
+            }
+        }
+    }
+
+    // ============================================================
+    //  ДИАЛОГ
+    // ============================================================
+
+    function showDialog(icon, title, text, sub, actions) {
+        if (icon && icon.startsWith('<')) { dialogIcon.innerHTML = icon; } else { dialogIcon.textContent = icon || '💰'; }
+        dialogTitle.textContent = title || 'Сообщение';
+        dialogText.innerHTML = text || '';
+        dialogSub.textContent = sub || '';
+        dialogActions.innerHTML = '';
+        for (const action of actions) {
+            const btn = document.createElement('button');
+            btn.className = `dialog-btn dialog-btn-${action.type || 'secondary'}`;
+            btn.textContent = action.label;
+            btn.addEventListener('click', () => { if (action.cb) action.cb();
+                closeDialog(); });
+            dialogActions.appendChild(btn);
+        }
+        dialogOverlay.classList.add('active');
+    }
+
+    function closeDialog() { dialogOverlay.classList.remove('active'); }
+
+    dialogOverlay.addEventListener('click', (e) => { if (e.target === dialogOverlay) closeDialog(); });
+
+    // ============================================================
+    //  ПРОДАЖА
+    // ============================================================
+
+    function openSellDialog(itemName) {
+        if (!currentUser) {
+            showDialog('🔒', 'Ошибка', 'Сначала авторизуйтесь!', '', [{ id: 'ok', label: 'ОК', type: 'secondary',
+                cb: () => {} }]);
+            return;
+        }
+        const price = SELL_PRICES[itemName];
+        if (!price) {
+            showDialog('❌', 'Ошибка', 'Этот предмет нельзя продать', '', [{ id: 'ok', label: 'ОК', type: 'secondary',
+                cb: () => {} }]);
+            return;
+        }
+        const count = inventory.filter(i => i === itemName).length;
+        if (count === 0) {
+            showDialog('❌', 'Ошибка', 'У вас нет этого предмета', '', [{ id: 'ok', label: 'ОК', type: 'secondary',
+                cb: () => {} }]);
+            return;
+        }
+        const totalPrice = price * count;
+        showDialog(
+            '💰', 'Продажа предмета',
+            `${getImageHtml(itemName, 24)} ${itemName}`,
+            `Цена: ${price} ⭐ за 1 шт. | Всего: ${count} шт. (${totalPrice} ⭐)`,
+            [
+                { id: 'cancel', label: 'Отмена', type: 'secondary', cb: () => {} },
+                { id: 'one', label: 'Продать 1', type: 'gold', cb: () => { sellItem(itemName, 1); } },
+                { id: 'all', label: 'Продать всё', type: 'gold', cb: () => { sellItem(itemName, count); } }
+            ]
+        );
+    }
+
+    async function sellItem(itemName, amount) {
+        const price = SELL_PRICES[itemName];
+        if (!price) return;
+        let sold = 0;
+        for (let i = 0; i < amount; i++) {
+            const index = inventory.indexOf(itemName);
+            if (index === -1) break;
+            inventory.splice(index, 1);
+            sold++;
+        }
+        if (sold === 0) {
+            showDialog('❌', 'Ошибка', 'Не удалось продать предмет', '', [{ id: 'ok', label: 'ОК', type: 'secondary',
+                cb: () => {} }]);
+            return;
+        }
+        const earned = sold * price;
+        stars += earned;
+        if (!inventory.includes(itemName) && lastDrop === itemName) {
+            lastDrop = inventory.length > 0 ? inventory[inventory.length - 1] : null;
+        }
+        await refreshUI();
+        showDialog('✅', 'Продажа успешна!', `Продано ${sold} шт. ${getImageHtml(itemName, 24)} ${itemName}`,
+            `Получено: +${earned} ⭐ Stars`, [
+                { id: 'ok', label: 'Отлично!', type: 'success', cb: () => {} }
+            ]);
+    }
+
+    // ============================================================
+    //  ОТКРЫТИЕ КЕЙСОВ
+    // ============================================================
+
+    async function openCase(caseType) {
+        if (!currentUser) {
+            showDialog('🔒', 'Ошибка', 'Сначала авторизуйтесь!', '', [{ id: 'ok', label: 'ОК', type: 'secondary',
+                cb: () => {} }]);
+            return;
+        }
+
+        const price = CASE_PRICES[caseType];
+        if (price === undefined) return;
+
+        if (stars < price) {
+            showDialog(
+                '❌',
+                'Недостаточно Stars!',
+                `Для открытия этого кейса нужно <span style="color:#fbbf24;">${price} ⭐</span>`,
+                `У вас: ${stars} ⭐`,
+                [{ id: 'ok', label: 'ОК', type: 'secondary', cb: () => {} }]
+            );
+            return;
+        }
+
+        stars -= price;
+
+        let items, caseName;
+        if (caseType === 'standard') { items = STANDARD_ITEMS;
+            caseName = 'Стандартный кейс'; } else if (caseType === 'rare') { items = RARE_ITEMS;
+            caseName = 'Rare Case'; } else return;
+
+        const dropped = items[Math.floor(Math.random() * items.length)];
+        inventory.push(dropped);
+        lastDrop = dropped;
+        await refreshUI();
+
+        const rarity = RARITY_MAP[dropped] || 'Обычный';
+        const isRare = rarity === 'Редкий' || rarity === 'Легендарный';
+        const color = rarity === 'Легендарный' ? '#ff6b6b' : (isRare ? '#fbbf24' : '');
+        showDialog(
+            getImageHtml(dropped, 40),
+            '🎁 Выпало!',
+            `${getImageHtml(dropped, 28)} <span style="${color ? 'color:' + color + ';' : ''}">${dropped}</span> <span style="font-size:.7rem;color:${color || '#4a5f74'};">(${rarity})</span>`,
+            `Из кейса: ${caseName} | Снято: ${price} ⭐`,
+            [{ id: 'ok', label: 'Отлично!', type: 'success', cb: () => {} }]
+        );
+    }
+
+    // ============================================================
+    //  ПРОМОКОДЫ
+    // ============================================================
+
+    function loadPromoCodes() {
+        try { const data = JSON.parse(localStorage.getItem('casePromoCodes') || '[]'); if (Array.isArray(data)) promoCodes =
+                data; } catch (e) {}
+    }
+
+    function savePromoCodes() { localStorage.setItem('casePromoCodes', JSON.stringify(promoCodes)); }
+
+    function renderPromoCodes() {
+        if (!promoList) return;
+        if (promoCodes.length === 0) {
+            promoList.innerHTML = `<div style="color:#4a5f74;font-size:.6rem;padding:3px 0;">Нет активных промокодов</div>`;
+            return;
+        }
+        let html = '';
+        for (const p of [...promoCodes].reverse()) {
+            const used = p.maxUses - p.uses;
+            const giftIcon = p.gift ? getImageHtml(p.gift, 14) : '🎁';
+            html +=
+                `<div class="promo-item"><span><span class="promo-code">${p.code}</span> — ${p.name} ${giftIcon}</span><span class="promo-uses">осталось: ${used} / ${p.maxUses}</span></div>`;
+        }
+        promoList.innerHTML = html;
+    }
+
+    function generatePromoCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+        return code;
+    }
+
+    function createPromoCode() {
+        const name = promoNameInput.value.trim();
+        const maxUses = parseInt(promoUsesInput.value) || 1;
+        const gift = promoGiftSelect.value;
+
+        if (!name) {
+            adminMessage.textContent = '❌ Введите название';
+            adminMessage.className = 'admin-message error';
+            return;
+        }
+        if (maxUses < 1) {
+            adminMessage.textContent = '❌ Активаций должно быть > 0';
+            adminMessage.className = 'admin-message error';
+            return;
+        }
+        let code = generatePromoCode();
+        while (promoCodes.find(p => p.code === code)) code = generatePromoCode();
+        promoCodes.push({
+            id: Date.now().toString(36),
+            name: name,
+            code: code,
+            uses: 0,
+            maxUses: maxUses,
+            gift: gift
+        });
+        savePromoCodes();
+        renderPromoCodes();
+        const giftIcon = getImageHtml(gift, 18);
+        adminMessage.innerHTML =
+            `✅ Промокод "${name}" создан! Код: ${code} (${maxUses} активаций) Подарок: ${giftIcon} ${gift}`;
+        adminMessage.className = 'admin-message success';
+        promoNameInput.value = '';
+        promoUsesInput.value = '1';
+        promoGiftSelect.value = 'Роза';
+    }
+
+    function applyPromoCode() {
+        const code = promoInput.value.trim().toUpperCase();
+        if (!code) {
+            promoMessage.textContent = '❌ Введите промокод';
+            promoMessage.className = 'promo-message error';
+            return;
+        }
+        if (!currentUser) {
+            promoMessage.textContent = '❌ Сначала авторизуйтесь!';
+            promoMessage.className = 'promo-message error';
+            return;
+        }
+        const idx = promoCodes.findIndex(p => p.code === code);
+        if (idx === -1) {
+            promoMessage.textContent = '❌ Промокод не найден';
+            promoMessage.className = 'promo-message error';
+            return;
+        }
+        const promo = promoCodes[idx];
+        if (promo.uses >= promo.maxUses) {
+            promoMessage.textContent = '❌ Промокод использован';
+            promoMessage.className = 'promo-message error';
+            return;
+        }
+
+        const dropped = promo.gift || ALL_ITEMS[Math.floor(Math.random() * ALL_ITEMS.length)];
+        inventory.push(dropped);
+        lastDrop = dropped;
+        promoCodes[idx].uses += 1;
+        savePromoCodes();
+        renderPromoCodes();
+        refreshUI();
+
+        const giftIcon = getImageHtml(dropped, 22);
+        promoMessage.innerHTML = `✅ Промокод активирован! Вы получили: ${giftIcon} ${dropped}`;
+        promoMessage.className = 'promo-message success';
+        promoInput.value = '';
+
+        if (promoCodes[idx].uses >= promoCodes[idx].maxUses) {
+            promoCodes.splice(idx, 1);
+            savePromoCodes();
+            renderPromoCodes();
+        }
+    }
+
+    // ============================================================
+    //  АДМИН-ПАНЕЛЬ
+    // ============================================================
+
+    async function renderAccounts() {
+        if (!accountList) return;
+        try {
+            const snapshot = await db.collection('accounts').get();
+            const accounts = {};
+            snapshot.forEach(doc => {
+                accounts[doc.id] = doc.data();
+            });
+            const names = Object.keys(accounts);
+            if (names.length === 0) {
+                accountList.innerHTML =
+                    `<div style="color:#4a5f74;font-size:.6rem;padding:3px 0;">Нет зарегистрированных аккаунтов</div>`;
+                return;
+            }
+            let html = '';
+            for (const id of names) {
+                const acc = accounts[id];
+                const name = acc.username || id;
+                const itemCount = (acc.inventory || []).length;
+                const starsCount = acc.stars || 0;
+                const isCurrent = name === currentUser;
+                html +=
+                    `<div class="account-item"><span class="acc-name">${name} ${isCurrent ? '⭐' : ''}</span><span class="acc-info">${itemCount} предм. | ${starsCount} ⭐</span><button class="acc-btn" data-uid="${id}">Выбрать</button></div>`;
+            }
+            accountList.innerHTML = html;
+            accountList.querySelectorAll('.acc-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    giftTargetInput.value = this.dataset.uid;
+                    adminMessage.textContent = `👤 Выбран аккаунт: ${this.dataset.uid}`;
+                    adminMessage.className = 'admin-message success';
+                    setTimeout(() => { adminMessage.textContent = '';
+                        adminMessage.className = 'admin-message'; }, 2000);
+                });
+            });
+        } catch (e) {
+            console.error('Ошибка загрузки аккаунтов:', e);
+            accountList.innerHTML = `<div style="color:#4a5f74;font-size:.6rem;padding:3px 0;">Ошибка загрузки</div>`;
+        }
+    }
+
+    async function giveGiftToTarget() {
+        const target = giftTargetInput.value.trim();
+        const gift = giftSelect.value;
+        const count = parseInt(giftCountInput.value) || 1;
+        if (!target) { adminMessage.textContent = '❌ Укажите UID аккаунта';
+            adminMessage.className = 'admin-message error'; return; }
+        if (count < 1) { adminMessage.textContent = '❌ Количество должно быть > 0';
+            adminMessage.className = 'admin-message error'; return; }
+
+        try {
+            const doc = await db.collection('accounts').doc(target).get();
+            if (!doc.exists) { adminMessage.textContent = `❌ Аккаунт "${target}" не найден`;
+                adminMessage.className = 'admin-message error'; return; }
+
+            const data = doc.data();
+            const inv = data.inventory || [];
+            for (let i = 0; i < count; i++) inv.push(gift);
+
+            await db.collection('accounts').doc(target).update({
+                inventory: inv,
+                lastDrop: gift
+            });
+
+            if (currentUid === target) { inventory = inv;
+                lastDrop = gift;
+                refreshUI(); }
+
+            const giftIcon = getImageHtml(gift, 18);
+            adminMessage.innerHTML = `✅ Выдано ${count} шт. ${giftIcon} ${gift} игроку ${target}`;
+            adminMessage.className = 'admin-message success';
+            await renderAccounts();
+            giftCountInput.value = '1';
+        } catch (e) {
+            adminMessage.textContent = `❌ Ошибка: ${e.message}`;
+            adminMessage.className = 'admin-message error';
+        }
+    }
+
+    function toggleAdminPanel() {
+        if (currentUser !== 'CatCheat_Game.Owner') {
+            showDialog('🔒', 'Доступ запрещён', 'Только владелец CatCheat_Game.Owner может открыть админ-панель', '', [
+                { id: 'ok', label: 'ОК', type: 'secondary', cb: () => {} }
+            ]);
+            return;
+        }
+        adminPanel.classList.toggle('visible');
+        if (adminPanel.classList.contains('visible')) {
+            renderPromoCodes();
+            renderAccounts();
+            adminMessage.textContent = '';
+            adminMessage.className = 'admin-message';
+            giftTargetInput.value = currentUid || '';
+        }
+    }
+
+    adminToggleBtn.addEventListener('click', toggleAdminPanel);
+    closeAdminBtn.addEventListener('click', () => adminPanel.classList.remove('visible'));
+    refreshAdminBtn.addEventListener('click', async () => {
+        loadPromoCodes();
+        renderPromoCodes();
+        await renderAccounts();
+        adminMessage.textContent = '🔄 Данные обновлены';
+        adminMessage.className = 'admin-message';
+        setTimeout(() => { adminMessage.textContent = '';
+            adminMessage.className = 'admin-message'; }, 1500);
+    });
+    createPromoBtn.addEventListener('click', createPromoCode);
+    giveGiftBtn.addEventListener('click', giveGiftToTarget);
+
+    // ===== ОБРАБОТЧИКИ КЕЙСОВ =====
+    document.querySelectorAll('.open-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const caseType = this.dataset.case;
+            openCase(caseType);
+        });
+    });
+
+    // ============================================================
+    //  МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ
+    // ============================================================
+
+    function openAuthModal() {
+        authModal.classList.add('active');
+        loginError.textContent = '';
+        registerError.textContent = '';
+        recoverError.textContent = '';
+        recoverSuccess.textContent = '';
+        loginEmail.value = '';
+        loginPassword.value = '';
+        registerUsername.value = '';
+        registerEmail.value = '';
+        registerPassword.value = '';
+        registerPasswordConfirm.value = '';
+        recoverEmail.value = '';
+        switchAuthTab('login');
+    }
+
+    function closeAuthModal() { authModal.classList.remove('active'); }
+
+    function switchAuthTab(tab) {
+        authTabs.forEach(t => t.classList.toggle('active', t.dataset.authTab === tab));
+        Object.keys(authForms).forEach(key => authForms[key].classList.toggle('active', key === tab));
+        if (tab === 'login') authExtraText.innerHTML =
+            'Нет аккаунта? <button id="authSwitchToRegister">Зарегистрируйтесь</button>';
+        else if (tab === 'register') authExtraText.innerHTML =
+            'Уже есть аккаунт? <button id="authSwitchToLogin">Войдите</button>';
+        else authExtraText.innerHTML = 'Вспомнили пароль? <button id="authSwitchToLogin2">Войдите</button>';
+        document.getElementById('authSwitchToRegister')?.addEventListener('click', () => switchAuthTab('register'));
+        document.getElementById('authSwitchToLogin')?.addEventListener('click', () => switchAuthTab('login'));
+        document.getElementById('authSwitchToLogin2')?.addEventListener('click', () => switchAuthTab('login'));
+    }
+
+    authTabs.forEach(tab => tab.addEventListener('click', () => switchAuthTab(tab.dataset.authTab)));
+    authCancelBtns.forEach(btn => btn.addEventListener('click', closeAuthModal));
+    authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
+
+    authLoginBtn.addEventListener('click', async () => {
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value.trim();
+        if (!email || !password) { loginError.textContent = '❌ Заполните все поля'; return; }
+        const result = await loginWithEmail(email, password);
+        if (!result.success) { loginError.textContent = result.error; return; }
+        loginError.textContent = '';
+        closeAuthModal();
+        if (adminPanel.classList.contains('visible')) { await renderAccounts();
+            giftTargetInput.value = currentUid || ''; }
+    });
+
+    authRegisterBtn.addEventListener('click', async () => {
+        const username = registerUsername.value.trim();
+        const email = registerEmail.value.trim();
+        const password = registerPassword.value.trim();
+        const confirm = registerPasswordConfirm.value.trim();
+        if (!username || !email || !password || !confirm) { registerError.textContent = '❌ Заполните все поля'; return; }
+        if (password !== confirm) { registerError.textContent = '❌ Пароли не совпадают'; return; }
+        if (password.length < 6) { registerError.textContent = '❌ Пароль минимум 6 символов'; return; }
+        const result = await registerWithEmail(email, password, username);
+        if (!result.success) { registerError.textContent = result.error; return; }
+        registerError.textContent = '';
+        closeAuthModal();
+        if (adminPanel.classList.contains('visible')) { await renderAccounts();
+            giftTargetInput.value = currentUid || ''; }
+    });
+
+    googleLoginBtn.addEventListener('click', async () => {
+        const result = await loginWithGoogle();
+        if (!result.success) {
+            loginError.textContent = '❌ Ошибка входа через Google: ' + result.error;
+        }
+    });
+
+    googleRegisterBtn.addEventListener('click', async () => {
+        const result = await loginWithGoogle();
+        if (!result.success) {
+            registerError.textContent = '❌ Ошибка входа через Google: ' + result.error;
+        }
+    });
+
+    authRecoverBtn.addEventListener('click', async () => {
+        const email = recoverEmail.value.trim();
+        if (!email) { recoverError.textContent = '❌ Введите email'; return; }
+        const result = await resetPassword(email);
+        if (!result.success) { recoverError.textContent = result.error;
+            recoverSuccess.textContent = ''; return; }
+        recoverError.textContent = '';
+        recoverSuccess.textContent = '✅ Письмо для сброса пароля отправлено!';
+        recoverEmail.value = '';
+    });
+
+    // ============================================================
+    //  ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+    // ============================================================
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            Object.keys(panes).forEach(key => panes[key].classList.toggle('active', key === tab.dataset.tab));
+        });
+    });
+
+    // ============================================================
+    //  СОБЫТИЯ
+    // ============================================================
+
+    applyPromoBtn.addEventListener('click', applyPromoCode);
+    promoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyPromoCode(); });
+
+    openAuthBtn.addEventListener('click', openAuthModal);
+
+    profileLogoutBtn.addEventListener('click', async () => {
+        if (confirm(`Выйти из аккаунта "${currentUser}"?`)) {
+            await logoutUser();
+            if (adminPanel.classList.contains('visible')) { await renderAccounts();
+                giftTargetInput.value = ''; }
+        }
+    });
+
+    fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen?.();
+            fullscreenBtn.textContent = '⛶ Exit';
+        } else {
+            document.exitFullscreen?.();
+            fullscreenBtn.textContent = '⛶ Full';
+        }
+    });
+    document.addEventListener('fullscreenchange', () => {
+        fullscreenBtn.textContent = document.fullscreenElement ? '⛶ Exit' : '⛶ Full';
+    });
+
+    // ============================================================
+    //  ИНИЦИАЛИЗАЦИЯ
+    // ============================================================
+
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            await enterGame(user);
+        } else {
+            currentUser = null;
+            currentUid = null;
+            inventory = [];
+            lastDrop = null;
+            stars = 0;
+            updateAuthUI();
+        }
+    });
+
+    loadPromoCodes();
+    renderPromoCodes();
+
+    setTimeout(() => {
+        if (!currentUser) {
+            showDialog('👋', 'Добро пожаловать!', 'Войдите через Google или email', 'Создайте аккаунт, чтобы сохранять прогресс в облаке Firebase', [
+                { id: 'guest', label: 'Гость', type: 'secondary', cb: () => {} },
+                { id: 'register', label: 'Войти', type: 'primary', cb: () => { openAuthModal(); } }
+            ]);
+        }
+    }, 500);
+
+    if (adminPanel.classList.contains('visible')) {
+        renderAccounts();
+    }
+</script>
+
+</body>
+</html>
