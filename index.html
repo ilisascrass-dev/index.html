@@ -8,7 +8,6 @@
     <!-- ===== FIREBASE SDK ===== -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
@@ -173,13 +172,6 @@
         .auth-modal .modal-window .auth-success{color:#4ade80;font-size:.7rem;min-height:1rem;text-align:center}
         .auth-modal .modal-window .auth-extra{text-align:center;margin-top:6px;font-size:.65rem;color:#4a5f74}
         .auth-modal .modal-window .auth-extra button{background:none;border:none;color:#00b4ff;cursor:pointer;font-weight:600;font-size:.65rem;padding:0 4px}
-        
-        .btn-google{background:#fff;color:#333;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:.8rem;cursor:pointer;transition:.2s;margin-top:4px}
-        .btn-google:hover{background:#f5f5f5;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-        .btn-google:active{transform:scale(.97)}
-        .btn-google img{width:18px;height:18px}
-        .auth-divider{display:flex;align-items:center;gap:8px;margin:6px 0;color:#4a5f74;font-size:.65rem}
-        .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06)}
         
         @media (max-width:420px){.app-container{padding:12px 10px 12px}.tab{font-size:.6rem;padding:4px 2px}.inv-item .icon{width:30px;height:30px}.inv-item .icon img{width:24px;height:24px}.profile-stats .stat{padding:6px}.case-item{padding:8px 8px}.case-item .case-icon{font-size:18px;width:30px}}
         
@@ -383,7 +375,7 @@
                         <input class="admin-field" id="giftCountInput" placeholder="Кол-во" type="number" min="1" value="1">
                     </div>
                     <div class="admin-row">
-                        <input class="admin-field" id="giftTargetInput" placeholder="Кому (UID)" style="flex:2;">
+                        <input class="admin-field" id="giftTargetInput" placeholder="Кому (UID или имя)" style="flex:2;">
                         <button class="admin-btn admin-btn-success" id="giveGiftBtn">🎁 Выдать</button>
                     </div>
                     <div class="admin-section-title">👥 Все аккаунты</div>
@@ -430,16 +422,11 @@
         
         <!-- ВХОД -->
         <div class="auth-form active" id="authFormLogin">
-            <label>📧 Email</label>
-            <input type="email" id="loginEmail" placeholder="Введите email">
+            <label>👤 Имя аккаунта</label>
+            <input type="text" id="loginUsername" placeholder="Введите имя">
             <label>🔑 Пароль</label>
             <input type="password" id="loginPassword" placeholder="Введите пароль">
             <div class="auth-error" id="loginError"></div>
-            <button class="btn-google" id="googleLoginBtn">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-                Войти через Google
-            </button>
-            <div class="auth-divider">или</div>
             <div class="auth-actions">
                 <button class="btn btn-secondary" id="authCancelBtn">Отмена</button>
                 <button class="btn btn-primary" id="authLoginBtn">Войти</button>
@@ -448,20 +435,13 @@
         
         <!-- РЕГИСТРАЦИЯ -->
         <div class="auth-form" id="authFormRegister">
-            <label>👤 Имя в игре</label>
+            <label>👤 Имя аккаунта</label>
             <input type="text" id="registerUsername" placeholder="Придумайте имя">
-            <label>📧 Email</label>
-            <input type="email" id="registerEmail" placeholder="Введите email">
-            <label>🔑 Пароль (минимум 6 символов)</label>
+            <label>🔑 Пароль (минимум 4 символа)</label>
             <input type="password" id="registerPassword" placeholder="Придумайте пароль">
             <label>🔑 Повторите пароль</label>
             <input type="password" id="registerPasswordConfirm" placeholder="Повторите пароль">
             <div class="auth-error" id="registerError"></div>
-            <button class="btn-google" id="googleRegisterBtn">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-                Зарегистрироваться через Google
-            </button>
-            <div class="auth-divider">или</div>
             <div class="auth-actions">
                 <button class="btn btn-secondary" id="authCancelBtn2">Отмена</button>
                 <button class="btn btn-primary" id="authRegisterBtn">Создать</button>
@@ -470,13 +450,17 @@
         
         <!-- ВОССТАНОВЛЕНИЕ -->
         <div class="auth-form" id="authFormRecover">
-            <label>📧 Email</label>
-            <input type="email" id="recoverEmail" placeholder="Введите email для восстановления">
+            <label>👤 Имя аккаунта</label>
+            <input type="text" id="recoverUsername" placeholder="Введите имя для восстановления">
+            <label>🔑 Новый пароль</label>
+            <input type="password" id="recoverPassword" placeholder="Придумайте новый пароль">
+            <label>🔑 Подтвердите пароль</label>
+            <input type="password" id="recoverPasswordConfirm" placeholder="Повторите пароль">
             <div class="auth-error" id="recoverError"></div>
             <div class="auth-success" id="recoverSuccess"></div>
             <div class="auth-actions">
                 <button class="btn btn-secondary" id="authCancelBtn3">Отмена</button>
-                <button class="btn btn-primary" id="authRecoverBtn">Отправить письмо</button>
+                <button class="btn btn-primary" id="authRecoverBtn">Сбросить пароль</button>
             </div>
         </div>
         
@@ -500,7 +484,6 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
 
     // ============================================================
     //  ДАННЫЕ ИГРЫ
@@ -613,21 +596,20 @@
         recover: document.getElementById('authFormRecover')
     };
     
-    const loginEmail = document.getElementById('loginEmail');
+    const loginUsername = document.getElementById('loginUsername');
     const loginPassword = document.getElementById('loginPassword');
     const loginError = document.getElementById('loginError');
     const authLoginBtn = document.getElementById('authLoginBtn');
-    const googleLoginBtn = document.getElementById('googleLoginBtn');
 
     const registerUsername = document.getElementById('registerUsername');
-    const registerEmail = document.getElementById('registerEmail');
     const registerPassword = document.getElementById('registerPassword');
     const registerPasswordConfirm = document.getElementById('registerPasswordConfirm');
     const registerError = document.getElementById('registerError');
     const authRegisterBtn = document.getElementById('authRegisterBtn');
-    const googleRegisterBtn = document.getElementById('googleRegisterBtn');
 
-    const recoverEmail = document.getElementById('recoverEmail');
+    const recoverUsername = document.getElementById('recoverUsername');
+    const recoverPassword = document.getElementById('recoverPassword');
+    const recoverPasswordConfirm = document.getElementById('recoverPasswordConfirm');
     const recoverError = document.getElementById('recoverError');
     const recoverSuccess = document.getElementById('recoverSuccess');
     const authRecoverBtn = document.getElementById('authRecoverBtn');
@@ -640,62 +622,30 @@
     const authExtraText = document.getElementById('authExtraText');
 
     // ============================================================
-    //  ОСНОВНЫЕ ФУНКЦИИ
+    //  РАБОТА С АККАУНТАМИ (FIRESTORE)
     // ============================================================
 
-    async function enterGame(user) {
-        currentUid = user.uid;
+    async function loadAccounts() {
         try {
-            const doc = await db.collection('accounts').doc(user.uid).get();
-            if (doc.exists) {
-                const data = doc.data();
-                currentUser = data.username || user.email;
-                inventory = data.inventory || [];
-                lastDrop = data.lastDrop || null;
-                stars = data.stars || 0;
-            } else {
-                const name = prompt('Введите имя для игры:');
-                const newUser = name || user.displayName || user.email || 'Игрок';
-                await db.collection('accounts').doc(user.uid).set({
-                    username: newUser,
-                    email: user.email,
-                    inventory: [],
-                    lastDrop: null,
-                    stars: 1,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                const dropped = STANDARD_ITEMS[Math.floor(Math.random() * STANDARD_ITEMS.length)];
-                await db.collection('accounts').doc(user.uid).update({
-                    inventory: [dropped],
-                    lastDrop: dropped
-                });
-                currentUser = newUser;
-                inventory = [dropped];
-                lastDrop = dropped;
-                stars = 1;
-            }
+            const snapshot = await db.collection('accounts').get();
+            const accounts = {};
+            snapshot.forEach(doc => {
+                accounts[doc.id] = doc.data();
+            });
+            return accounts;
         } catch (e) {
-            console.error('Ошибка загрузки данных:', e);
+            console.error('Ошибка загрузки аккаунтов:', e);
+            return {};
         }
-        updateAuthUI();
-        closeAuthModal();
-        const display = lastDrop ? getImageHtml(lastDrop, 32) : '🎁';
-        showDialog('👋', 'Добро пожаловать!', `${display} <span style="color:#4ade80;">${currentUser}</span>`, 'Вы вошли в игру!', [
-            { id: 'ok', label: 'Отлично!', type: 'success', cb: () => {} }
-        ]);
     }
 
-    async function logoutUser() {
+    async function saveAccount(uid, data) {
         try {
-            await auth.signOut();
-            currentUser = null;
-            currentUid = null;
-            inventory = [];
-            lastDrop = null;
-            stars = 0;
-            updateAuthUI();
+            await db.collection('accounts').doc(uid).set(data);
+            return true;
         } catch (e) {
-            console.error('Ошибка выхода:', e);
+            console.error('Ошибка сохранения:', e);
+            return false;
         }
     }
 
@@ -703,58 +653,127 @@
     //  РЕГИСТРАЦИЯ И ВХОД
     // ============================================================
 
-    async function registerWithEmail(email, password, username) {
-        try {
-            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            const user = userCredential.user;
-            await db.collection('accounts').doc(user.uid).set({
-                username: username,
-                email: email,
-                inventory: [],
-                lastDrop: null,
-                stars: 1,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            const dropped = STANDARD_ITEMS[Math.floor(Math.random() * STANDARD_ITEMS.length)];
-            await db.collection('accounts').doc(user.uid).update({
-                inventory: [dropped],
-                lastDrop: dropped
-            });
-            await enterGame(user);
-            return { success: true };
-        } catch (error) {
-            return { success: false, error: error.message };
+    async function registerUser(username, password) {
+        const accounts = await loadAccounts();
+        
+        // Проверяем, существует ли аккаунт
+        for (const [uid, data] of Object.entries(accounts)) {
+            if (data.username === username) {
+                return { success: false, error: '❌ Аккаунт с таким именем уже существует' };
+            }
         }
+        
+        if (username.length < 2) {
+            return { success: false, error: '❌ Имя должно содержать минимум 2 символа' };
+        }
+        if (password.length < 4) {
+            return { success: false, error: '❌ Пароль должен содержать минимум 4 символа' };
+        }
+
+        const uid = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+        
+        // Создаём аккаунт
+        await saveAccount(uid, {
+            username: username,
+            password: password,
+            inventory: [],
+            lastDrop: null,
+            stars: 1,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Выдаём бесплатный кейс
+        const dropped = STANDARD_ITEMS[Math.floor(Math.random() * STANDARD_ITEMS.length)];
+        await db.collection('accounts').doc(uid).update({
+            inventory: [dropped],
+            lastDrop: dropped
+        });
+
+        // Входим
+        currentUid = uid;
+        currentUser = username;
+        inventory = [dropped];
+        lastDrop = dropped;
+        stars = 1;
+        updateAuthUI();
+        closeAuthModal();
+
+        const display = getImageHtml(dropped, 32);
+        showDialog('👋', 'Добро пожаловать!', `${display} <span style="color:#4ade80;">${username}</span>`, 'Аккаунт создан! +1 ⭐ Star', [
+            { id: 'ok', label: 'Отлично!', type: 'success', cb: () => {} }
+        ]);
+
+        return { success: true };
     }
 
-    async function loginWithEmail(email, password) {
-        try {
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
-            await enterGame(userCredential.user);
-            return { success: true };
-        } catch (error) {
-            return { success: false, error: error.message };
+    async function loginUser(username, password) {
+        const accounts = await loadAccounts();
+        
+        let foundUid = null;
+        let foundUser = null;
+        
+        for (const [uid, data] of Object.entries(accounts)) {
+            if (data.username === username && data.password === password) {
+                foundUid = uid;
+                foundUser = data;
+                break;
+            }
         }
+        
+        if (!foundUid) {
+            return { success: false, error: '❌ Неверное имя или пароль' };
+        }
+        
+        currentUid = foundUid;
+        currentUser = foundUser.username;
+        inventory = foundUser.inventory || [];
+        lastDrop = foundUser.lastDrop || null;
+        stars = foundUser.stars || 0;
+        
+        updateAuthUI();
+        closeAuthModal();
+        
+        const display = lastDrop ? getImageHtml(lastDrop, 32) : '🎁';
+        showDialog('👋', 'Добро пожаловать!', `${display} <span style="color:#4ade80;">${currentUser}</span>`, 'Вы вошли в игру!', [
+            { id: 'ok', label: 'Отлично!', type: 'success', cb: () => {} }
+        ]);
+        
+        return { success: true };
     }
 
-    async function loginWithGoogle() {
-        try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            const result = await auth.signInWithPopup(provider);
-            await enterGame(result.user);
-            return { success: true };
-        } catch (error) {
-            return { success: false, error: error.message };
+    async function recoverPassword(username, newPassword) {
+        const accounts = await loadAccounts();
+        
+        let foundUid = null;
+        for (const [uid, data] of Object.entries(accounts)) {
+            if (data.username === username) {
+                foundUid = uid;
+                break;
+            }
         }
+        
+        if (!foundUid) {
+            return { success: false, error: '❌ Аккаунт не найден' };
+        }
+        
+        if (newPassword.length < 4) {
+            return { success: false, error: '❌ Пароль должен содержать минимум 4 символа' };
+        }
+        
+        await db.collection('accounts').doc(foundUid).update({
+            password: newPassword
+        });
+        
+        return { success: true };
     }
 
-    async function resetPassword(email) {
-        try {
-            await auth.sendPasswordResetEmail(email);
-            return { success: true };
-        } catch (error) {
-            return { success: false, error: error.message };
-        }
+    async function logoutUser() {
+        currentUser = null;
+        currentUid = null;
+        inventory = [];
+        lastDrop = null;
+        stars = 0;
+        updateAuthUI();
     }
 
     // ============================================================
@@ -786,6 +805,10 @@
 
     function updateTopBar() { starsDisplay.textContent = stars; }
 
+    // ============================================================
+    //  АДМИН-ПАНЕЛЬ (ПО НИКУ)
+    // ============================================================
+
     function checkAdminAccess() {
         if (currentUser === 'CatCheat_Game.Owner') {
             adminToggleBtn.classList.add('visible');
@@ -794,6 +817,10 @@
             adminPanel.classList.remove('visible');
         }
     }
+
+    // ============================================================
+    //  РЕНДЕР ИНВЕНТАРЯ
+    // ============================================================
 
     function renderInventory() {
         if (!inventoryList) return;
@@ -1016,7 +1043,7 @@
     }
 
     // ============================================================
-    //  ПРОМОКОДЫ
+    //  ПРОМОКОДЫ (LOCALSTORAGE)
     // ============================================================
 
     function loadPromoCodes() {
@@ -1137,19 +1164,15 @@
     async function renderAccounts() {
         if (!accountList) return;
         try {
-            const snapshot = await db.collection('accounts').get();
-            const accounts = {};
-            snapshot.forEach(doc => {
-                accounts[doc.id] = doc.data();
-            });
-            const names = Object.keys(accounts);
-            if (names.length === 0) {
+            const accounts = await loadAccounts();
+            const ids = Object.keys(accounts);
+            if (ids.length === 0) {
                 accountList.innerHTML =
                     `<div style="color:#4a5f74;font-size:.6rem;padding:3px 0;">Нет зарегистрированных аккаунтов</div>`;
                 return;
             }
             let html = '';
-            for (const id of names) {
+            for (const id of ids) {
                 const acc = accounts[id];
                 const name = acc.username || id;
                 const itemCount = (acc.inventory || []).length;
@@ -1178,31 +1201,45 @@
         const target = giftTargetInput.value.trim();
         const gift = giftSelect.value;
         const count = parseInt(giftCountInput.value) || 1;
-        if (!target) { adminMessage.textContent = '❌ Укажите UID аккаунта';
+        if (!target) { adminMessage.textContent = '❌ Укажите UID или имя аккаунта';
             adminMessage.className = 'admin-message error'; return; }
         if (count < 1) { adminMessage.textContent = '❌ Количество должно быть > 0';
             adminMessage.className = 'admin-message error'; return; }
 
         try {
-            const doc = await db.collection('accounts').doc(target).get();
-            if (!doc.exists) { adminMessage.textContent = `❌ Аккаунт "${target}" не найден`;
-                adminMessage.className = 'admin-message error'; return; }
+            // Ищем аккаунт по UID или имени
+            const accounts = await loadAccounts();
+            let targetUid = null;
+            let targetData = null;
+            
+            for (const [uid, data] of Object.entries(accounts)) {
+                if (uid === target || data.username === target) {
+                    targetUid = uid;
+                    targetData = data;
+                    break;
+                }
+            }
+            
+            if (!targetUid) {
+                adminMessage.textContent = `❌ Аккаунт "${target}" не найден`;
+                adminMessage.className = 'admin-message error';
+                return;
+            }
 
-            const data = doc.data();
-            const inv = data.inventory || [];
+            const inv = targetData.inventory || [];
             for (let i = 0; i < count; i++) inv.push(gift);
 
-            await db.collection('accounts').doc(target).update({
+            await db.collection('accounts').doc(targetUid).update({
                 inventory: inv,
                 lastDrop: gift
             });
 
-            if (currentUid === target) { inventory = inv;
+            if (currentUid === targetUid) { inventory = inv;
                 lastDrop = gift;
                 refreshUI(); }
 
             const giftIcon = getImageHtml(gift, 18);
-            adminMessage.innerHTML = `✅ Выдано ${count} шт. ${giftIcon} ${gift} игроку ${target}`;
+            adminMessage.innerHTML = `✅ Выдано ${count} шт. ${giftIcon} ${gift} игроку ${targetData.username || targetUid}`;
             adminMessage.className = 'admin-message success';
             await renderAccounts();
             giftCountInput.value = '1';
@@ -1261,13 +1298,14 @@
         registerError.textContent = '';
         recoverError.textContent = '';
         recoverSuccess.textContent = '';
-        loginEmail.value = '';
+        loginUsername.value = '';
         loginPassword.value = '';
         registerUsername.value = '';
-        registerEmail.value = '';
         registerPassword.value = '';
         registerPasswordConfirm.value = '';
-        recoverEmail.value = '';
+        recoverUsername.value = '';
+        recoverPassword.value = '';
+        recoverPasswordConfirm.value = '';
         switchAuthTab('login');
     }
 
@@ -1290,11 +1328,12 @@
     authCancelBtns.forEach(btn => btn.addEventListener('click', closeAuthModal));
     authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
 
+    // === ВХОД ===
     authLoginBtn.addEventListener('click', async () => {
-        const email = loginEmail.value.trim();
+        const username = loginUsername.value.trim();
         const password = loginPassword.value.trim();
-        if (!email || !password) { loginError.textContent = '❌ Заполните все поля'; return; }
-        const result = await loginWithEmail(email, password);
+        if (!username || !password) { loginError.textContent = '❌ Заполните все поля'; return; }
+        const result = await loginUser(username, password);
         if (!result.success) { loginError.textContent = result.error; return; }
         loginError.textContent = '';
         closeAuthModal();
@@ -1302,15 +1341,15 @@
             giftTargetInput.value = currentUid || ''; }
     });
 
+    // === РЕГИСТРАЦИЯ ===
     authRegisterBtn.addEventListener('click', async () => {
         const username = registerUsername.value.trim();
-        const email = registerEmail.value.trim();
         const password = registerPassword.value.trim();
         const confirm = registerPasswordConfirm.value.trim();
-        if (!username || !email || !password || !confirm) { registerError.textContent = '❌ Заполните все поля'; return; }
+        if (!username || !password || !confirm) { registerError.textContent = '❌ Заполните все поля'; return; }
         if (password !== confirm) { registerError.textContent = '❌ Пароли не совпадают'; return; }
-        if (password.length < 6) { registerError.textContent = '❌ Пароль минимум 6 символов'; return; }
-        const result = await registerWithEmail(email, password, username);
+        if (password.length < 4) { registerError.textContent = '❌ Пароль минимум 4 символа'; return; }
+        const result = await registerUser(username, password);
         if (!result.success) { registerError.textContent = result.error; return; }
         registerError.textContent = '';
         closeAuthModal();
@@ -1318,29 +1357,25 @@
             giftTargetInput.value = currentUid || ''; }
     });
 
-    googleLoginBtn.addEventListener('click', async () => {
-        const result = await loginWithGoogle();
-        if (!result.success) {
-            loginError.textContent = '❌ Ошибка входа через Google: ' + result.error;
-        }
-    });
-
-    googleRegisterBtn.addEventListener('click', async () => {
-        const result = await loginWithGoogle();
-        if (!result.success) {
-            registerError.textContent = '❌ Ошибка входа через Google: ' + result.error;
-        }
-    });
-
+    // === ВОССТАНОВЛЕНИЕ ===
     authRecoverBtn.addEventListener('click', async () => {
-        const email = recoverEmail.value.trim();
-        if (!email) { recoverError.textContent = '❌ Введите email'; return; }
-        const result = await resetPassword(email);
+        const username = recoverUsername.value.trim();
+        const password = recoverPassword.value.trim();
+        const confirm = recoverPasswordConfirm.value.trim();
+        if (!username || !password || !confirm) { recoverError.textContent = '❌ Заполните все поля';
+            recoverSuccess.textContent = ''; return; }
+        if (password !== confirm) { recoverError.textContent = '❌ Пароли не совпадают';
+            recoverSuccess.textContent = ''; return; }
+        if (password.length < 4) { recoverError.textContent = '❌ Пароль минимум 4 символа';
+            recoverSuccess.textContent = ''; return; }
+        const result = await recoverPassword(username, password);
         if (!result.success) { recoverError.textContent = result.error;
             recoverSuccess.textContent = ''; return; }
         recoverError.textContent = '';
-        recoverSuccess.textContent = '✅ Письмо для сброса пароля отправлено!';
-        recoverEmail.value = '';
+        recoverSuccess.textContent = '✅ Пароль успешно изменён! Теперь вы можете войти.';
+        recoverUsername.value = '';
+        recoverPassword.value = '';
+        recoverPasswordConfirm.value = '';
     });
 
     // ============================================================
@@ -1389,25 +1424,12 @@
     //  ИНИЦИАЛИЗАЦИЯ
     // ============================================================
 
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            await enterGame(user);
-        } else {
-            currentUser = null;
-            currentUid = null;
-            inventory = [];
-            lastDrop = null;
-            stars = 0;
-            updateAuthUI();
-        }
-    });
-
     loadPromoCodes();
     renderPromoCodes();
 
     setTimeout(() => {
         if (!currentUser) {
-            showDialog('👋', 'Добро пожаловать!', 'Войдите через Google или email', 'Создайте аккаунт, чтобы сохранять прогресс в облаке Firebase', [
+            showDialog('👋', 'Добро пожаловать!', 'Войдите или зарегистрируйтесь', 'Создайте аккаунт, чтобы сохранять прогресс в облаке Firebase', [
                 { id: 'guest', label: 'Гость', type: 'secondary', cb: () => {} },
                 { id: 'register', label: 'Войти', type: 'primary', cb: () => { openAuthModal(); } }
             ]);
@@ -1420,4 +1442,4 @@
 </script>
 
 </body>
-</html>
+    </html>
